@@ -1,0 +1,701 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Shapefront</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+/* Layout: drafting table. Square battle grid is the hero; field manual sits alongside on wide screens, below on phones. */
+:root{
+  --bg:#E6EBF0; --panel:#F4F6F9; --board:#FBFCFD; --ink:#16223A; --muted:#5A687D;
+  --grid:#D5DCE5; --line:#B7C2CF;
+  --blue:#2556C4; --blue-t:#DCE4F7; --orange:#C55F0C; --orange-t:#F8E2CC;
+  --f-display:'Chakra Petch', 'Segoe UI', system-ui, sans-serif;
+  --f-body:'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --dur:300ms;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0C1422; --panel:#121D31; --board:#0F1929; --ink:#E4EAF3; --muted:#8D9BB2;
+  --grid:#1D2A42; --line:#2E3E5C;
+  --blue:#7AA3FF; --blue-t:#1A2B52; --orange:#F29A4C; --orange-t:#3B2716; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0C1422; --panel:#121D31; --board:#0F1929; --ink:#E4EAF3; --muted:#8D9BB2;
+  --grid:#1D2A42; --line:#2E3E5C;
+  --blue:#7AA3FF; --blue-t:#1A2B52; --orange:#F29A4C; --orange-t:#3B2716; color-scheme:dark }
+
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45}
+.wrap{max-width:900px;margin:0 auto;padding-block:16px 40px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px}
+.brand h1{font-family:var(--f-display);font-weight:700;font-size:30px;letter-spacing:.02em;margin:0;line-height:1;text-transform:uppercase}
+.brand h1 b{color:var(--blue)} .brand h1 i{color:var(--orange);font-style:normal}
+.brand p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.top-r{display:flex;gap:8px;flex-wrap:wrap}
+.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;min-height:38px}
+.seg button + button{border-left:1.5px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--board)}
+
+button{font-family:var(--f-display);font-weight:600;font-size:14px;letter-spacing:.03em;color:var(--ink);background:var(--panel);border:1.5px solid var(--line);border-radius:8px;padding:8px 14px;min-height:44px;cursor:pointer}
+button:disabled{opacity:.4;cursor:not-allowed}
+button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+button.go{background:var(--ink);color:var(--board);border-color:var(--ink)}
+
+.layout{display:grid;gap:24px}
+@media (min-width:860px){ .layout{grid-template-columns:minmax(0,520px) minmax(0,1fr);align-items:start} }
+.game{min-width:0;display:grid;gap:10px}
+
+.scores{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.side{background:var(--panel);border:1.5px solid var(--line);border-radius:8px;padding:8px 12px;display:grid;grid-template-columns:auto 1fr;align-items:baseline;column-gap:10px}
+.side.o0{--t:var(--blue)} .side.o1{--t:var(--orange);text-align:right;grid-template-columns:1fr auto}
+.side .nm{font-family:var(--f-display);font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:12px;color:var(--t)}
+.side .pts{font-family:var(--f-display);font-weight:700;font-size:28px;line-height:1;font-variant-numeric:tabular-nums}
+.side.o1 .nm{order:2} .side.o1 .pts{order:1}
+.side .brk{grid-column:1/-1;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.side.lead{border-color:var(--t)}
+.status{font-family:var(--f-display);font-weight:600;font-size:15px;min-height:22px}
+.status .who0{color:var(--blue)} .status .who1{color:var(--orange)}
+
+.board{position:relative;width:100%;aspect-ratio:1;background-color:var(--board);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:12.5% 12.5%;border:2px solid var(--ink);border-radius:6px;touch-action:manipulation;user-select:none;-webkit-user-select:none;overflow:hidden}
+.board::after{content:"";position:absolute;left:0;right:0;top:calc(50% - 1px);border-top:2px dashed var(--line);pointer-events:none}
+.half{position:absolute;left:0;right:0;height:50%;opacity:0;transition:opacity .25s;pointer-events:none}
+.half.h1{top:0;background:var(--orange-t)} .half.h0{bottom:0;background:var(--blue-t)}
+.board[data-active="0"] .h0, .board[data-active="1"] .h1{opacity:.55}
+.board[data-active="0"], .board[data-active="1"]{cursor:pointer}
+.layer{position:absolute;inset:0;pointer-events:none}
+.fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+
+.unit{position:absolute;transition:left var(--dur) ease,top var(--dur) ease,opacity .4s,transform .4s}
+.unit.o0{--t:var(--blue);--tt:var(--blue-t)} .unit.o1{--t:var(--orange);--tt:var(--orange-t)}
+.unit .frame{position:absolute;inset:3px;border-radius:6px;background:var(--tt);border:1.5px solid color-mix(in srgb,var(--t) 45%,transparent)}
+.unit.multi .frame{border-color:var(--t);border-width:2px}
+.unit.rider .frame{border-style:dashed;border-color:var(--t)}
+.unit.fresh{animation:pop .3s ease}
+.blk{position:absolute}
+.blk svg{width:100%;height:100%;display:block;transition:transform var(--dur) ease}
+.shp{fill:var(--t)} .ring{fill:none;stroke:var(--t);stroke-width:5}
+.tag{position:absolute;top:4px;left:6px;font-family:var(--f-display);font-weight:700;font-size:9px;letter-spacing:.08em;line-height:1;color:var(--t)}
+.pips{position:absolute;top:3px;right:5px;font-size:9px;line-height:1;color:var(--t);letter-spacing:-1px}
+.hp{position:absolute;left:14%;right:14%;bottom:5px;height:3px;border-radius:2px;background:var(--grid);display:none}
+.hp i{display:block;height:100%;border-radius:2px;background:var(--t);transition:width .25s}
+.board.battle .hp{display:block}
+.unit.hit .frame{animation:hit .35s ease}
+.unit.dead{opacity:0;transform:scale(.5)}
+@keyframes hit{0%,100%{background:var(--tt)}35%{background:var(--t)}}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
+
+.shot{stroke-width:.07;stroke-linecap:round;animation:fade var(--dur) ease-out forwards}
+.ram{stroke-width:.16;stroke-linecap:round;animation:fade var(--dur) ease-out forwards}
+.imp{animation:fade var(--dur) ease-out forwards}
+.o0s{stroke:var(--blue);fill:var(--blue)} .o1s{stroke:var(--orange);fill:var(--orange)}
+@keyframes fade{0%{opacity:1}100%{opacity:0}}
+.float{position:absolute;transform:translate(-50%,-50%);font-family:var(--f-display);font-weight:700;font-size:15px;color:var(--ink);text-shadow:0 0 3px var(--board),0 0 3px var(--board);animation:rise 700ms ease-out forwards}
+.float.kill{font-size:13px;letter-spacing:.06em}
+@keyframes rise{from{opacity:1;margin-top:0}to{opacity:0;margin-top:-22px}}
+
+.result{position:absolute;inset:0;display:grid;place-items:center;background:color-mix(in srgb,var(--board) 86%,transparent);pointer-events:auto;padding:16px}
+.result .card{text-align:center;display:grid;gap:8px;justify-items:center}
+.result h2{font-family:var(--f-display);font-weight:700;font-size:34px;text-transform:uppercase;letter-spacing:.04em;margin:0;line-height:1}
+.result h2.w0{color:var(--blue)} .result h2.w1{color:var(--orange)}
+.result .big{font-family:var(--f-display);font-weight:700;font-size:22px;font-variant-numeric:tabular-nums}
+.result .det{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.result .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+
+.ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tray{display:flex;gap:8px}
+.shape-btn{display:flex;align-items:center;gap:6px;padding:6px 12px 6px 8px}
+.shape-btn svg{width:26px;height:26px}
+.shape-btn .shp{fill:var(--t)}
+.shape-btn .n{font-variant-numeric:tabular-nums;font-size:16px}
+.ctl[data-turn="0"]{--t:var(--blue);--tt:var(--blue-t)} .ctl[data-turn="1"]{--t:var(--orange);--tt:var(--orange-t)}
+.shape-btn[aria-pressed="true"]{border-color:var(--t);background:var(--tt);box-shadow:inset 0 0 0 1px var(--t)}
+.spacer{flex:1}
+.turn{font-family:var(--f-display);font-weight:600;font-variant-numeric:tabular-nums;color:var(--muted);font-size:14px}
+.log{font-size:13px;color:var(--muted);min-height:20px}
+.roster{display:grid;gap:4px;font-size:13px}
+.roster div{min-width:0}
+.roster b{font-family:var(--f-display);text-transform:uppercase;letter-spacing:.06em;font-size:11px;margin-right:6px}
+.roster .r0 b{color:var(--blue)} .roster .r1 b{color:var(--orange)}
+
+.guide{min-width:0;background:var(--panel);border:1.5px solid var(--line);border-radius:10px;padding:16px 18px}
+.guide h2{font-family:var(--f-display);font-weight:700;font-size:18px;text-transform:uppercase;letter-spacing:.06em;margin:0 0 4px}
+.guide .lede{color:var(--muted);font-size:13px;margin:0 0 12px}
+.guide h3{font-family:var(--f-display);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:16px 0 8px}
+.ulist{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.ulist li{display:grid;grid-template-columns:56px 1fr;gap:12px;align-items:start}
+.mini{display:grid;gap:1px;width:56px;justify-content:start;--t:var(--blue)}
+.mini span{width:17px;height:17px;display:block}
+.mini svg{width:100%;height:100%;display:block}
+.ulist strong{font-family:var(--f-display);font-weight:700;font-size:14px;letter-spacing:.03em}
+.ulist .code{font-family:var(--f-display);font-size:10px;color:var(--muted);letter-spacing:.08em;margin-left:6px}
+.ulist p{margin:2px 0 0;font-size:13px;color:var(--muted)}
+.rules{margin:0;padding-left:18px;font-size:13px;color:var(--muted);display:grid;gap:4px}
+.rules b{color:var(--ink);font-weight:700}
+
+@media (prefers-reduced-motion: reduce){
+  .unit,.blk svg,.hp i{transition:none!important}
+  .shot,.ram,.imp,.float,.unit.fresh,.unit.hit .frame{animation-duration:1ms!important}
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1><b>Shape</b><i>front</i></h1>
+      <p>Build your army from shapes. Then watch it fight. No luck involved.</p>
+    </div>
+    <div class="top-r">
+      <div class="seg" role="group" aria-label="Opponent">
+        <button id="m-cpu" aria-pressed="true">vs CPU</button>
+        <button id="m-2p" aria-pressed="false">2 players</button>
+      </div>
+      <button id="new">New game</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="game">
+      <div class="scores">
+        <div class="side o0" id="side0"><span class="nm">Blue</span><span class="pts" id="s0">0</span><span class="brk" id="b0"></span></div>
+        <div class="side o1" id="side1"><span class="nm">Orange</span><span class="pts" id="s1">0</span><span class="brk" id="b1"></span></div>
+      </div>
+      <div class="status" id="status" aria-live="polite"></div>
+
+      <div class="board" id="board" data-active="">
+        <div class="half h1"></div><div class="half h0"></div>
+        <div class="layer" id="units"></div>
+        <svg class="fx" id="fx" viewBox="0 0 8 8" preserveAspectRatio="none"></svg>
+        <div class="layer" id="floats"></div>
+        <div class="result" id="result" hidden></div>
+      </div>
+
+      <div class="ctl" id="place-ctl" data-turn="0">
+        <div class="tray" id="tray"></div>
+        <span class="spacer"></span>
+        <button id="undo">Undo</button>
+        <button id="done" class="go">Done</button>
+        <button id="fight" class="go" hidden>Fight</button>
+      </div>
+      <div class="ctl" id="battle-ctl" hidden>
+        <button id="play" class="go">Pause</button>
+        <button id="stepb">Step</button>
+        <div class="seg" role="group" aria-label="Speed">
+          <button data-sp="0" aria-pressed="false">1×</button>
+          <button data-sp="1" aria-pressed="true">2×</button>
+          <button data-sp="2" aria-pressed="false">4×</button>
+        </div>
+        <button id="skip">Skip</button>
+        <span class="spacer"></span>
+        <span class="turn" id="turn"></span>
+      </div>
+      <div class="log" id="log"></div>
+      <div class="roster" id="roster"></div>
+    </section>
+
+    <aside class="guide">
+      <h2>Field manual</h2>
+      <p class="lede">Shapes join into units based on how they touch. Formations are spotted the moment you place them, so watch the tags.</p>
+      <ul class="ulist" id="ulist"></ul>
+      <h3>How a game runs</h3>
+      <ol class="rules">
+        <li>Each side gets <b>5 squares, 4 triangles, 3 circles</b> on its own half of an 8×8 grid.</li>
+        <li>Blue places 1 block, then each side places 2 at a time. Placements are visible.</li>
+        <li>Squares are grouped first into castles, then columns (trucks), then rows (walls). Leftovers are buggies.</li>
+        <li>Each turn, everything fires at once, then everything moves at once. Two units heading for the same cell both wait.</li>
+        <li><b>1 point per damage, +5 per kill.</b> Riders lost with their buggy count as kills.</li>
+        <li>The battle lasts 20 turns, or ends early if a side is wiped out or 3 turns pass with nothing happening.</li>
+      </ol>
+    </aside>
+  </main>
+</div>
+
+<script>
+(() => {
+const N = 8, KILL = 5, MAX_TURNS = 20, BUGGY_RUN = 4, IDLE_END = 3;
+const INV = { sq: 5, tri: 4, cir: 3 };
+const TEAM = ['Blue', 'Orange'];
+const TYPES = {
+  inf: { name: 'Infantry', code: 'INF', hp: 2, shape: 'tri' },
+  bug: { name: 'Buggy',    code: 'BUG', hp: 3, shape: 'sq' },
+  trk: { name: 'Truck',    code: 'TRK', hp: 6, shape: 'sq' },
+  wal: { name: 'Wall',     code: 'WAL', hp: 6, shape: 'sq' },
+  cst: { name: 'Castle',   code: 'CST', hp: 10, shape: 'sq' },
+  tur: { name: 'Turret',   code: 'TUR', hp: 2, shape: 'cir' },
+  twr: { name: 'Tower',    code: 'TWR', hp: 4, shape: 'cir' },
+};
+const DMG = { inf: 1, tur: 1, twr: 2 }, RANGE = { inf: 3, tur: 2, twr: 3 }, RAM = { trk: 2, bug: 1 };
+const SPEEDS = [900, 480, 220];
+
+const $ = s => document.querySelector(s);
+const board = $('#board'), unitsEl = $('#units'), fxEl = $('#fx'), floatsEl = $('#floats');
+const key = c => c[0] + ',' + c[1];
+const inB = c => c[0] >= 0 && c[1] >= 0 && c[0] < N && c[1] < N;
+const fwd = o => (o === 0 ? -1 : 1);
+const toL = (o, x, y) => (o === 0 ? [x, y] : [N - 1 - x, N - 1 - y]); // involution: local <-> board
+const dirsFor = o => { const f = fwd(o), l = o === 0 ? -1 : 1; return [[0, f], [l, 0], [-l, 0], [0, -f]]; }; // front, left, right, back
+const cmp = (a, b) => { for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i]; return 0; };
+
+let UID = 0, GEN = 0, S = null;
+
+/* ---------- shapes ---------- */
+function shapeSvg(s, extra = '') {
+  const body = s === 'sq' ? '<rect class="shp" x="18" y="18" width="64" height="64" rx="7"/>'
+    : s === 'tri' ? '<polygon class="shp" points="50,14 87,82 13,82"/>'
+    : '<circle class="shp" cx="50" cy="50" r="31"/>';
+  return `<svg viewBox="0 0 100 100" aria-hidden="true">${body}${extra}</svg>`;
+}
+
+/* ---------- formation recognition ---------- */
+function mk(o, t, cells) {
+  return { id: 'u' + (++UID), o, t, cells: cells.map(c => [c.x ?? c[0], c.y ?? c[1]]), hp: TYPES[t].hp, max: TYPES[t].hp, riders: 0, moves: 0, face: [0, fwd(o)] };
+}
+function recognise(grid) {
+  const out = [];
+  for (const o of [0, 1]) {
+    const used = new Set();
+    const at = (lx, ly) => { if (lx < 0 || ly < 0 || lx >= N || ly >= N) return null; const [x, y] = toL(o, lx, ly); const g = grid[y][x]; return g && g.o === o ? { x, y, s: g.s } : null; };
+    const free = (lx, ly, s) => { const c = at(lx, ly); return c && c.s === s && !used.has(c.x + ',' + c.y) ? c : null; };
+    const take = cs => cs.forEach(c => used.add(c.x + ',' + c.y));
+    const scan = fn => { for (let ly = N - 1; ly >= 0; ly--) for (let lx = 0; lx < N; lx++) fn(lx, ly); };
+    const castleCells = new Set(), buggies = [];
+    scan((lx, ly) => { const cs = [free(lx, ly, 'sq'), free(lx + 1, ly, 'sq'), free(lx, ly - 1, 'sq'), free(lx + 1, ly - 1, 'sq')];
+      if (cs.every(Boolean)) { take(cs); cs.forEach(c => castleCells.add(c.x + ',' + c.y)); out.push(mk(o, 'cst', cs)); } });
+    scan((lx, ly) => { const a = free(lx, ly, 'sq'), b = free(lx, ly - 1, 'sq'); if (a && b) { take([a, b]); out.push(mk(o, 'trk', [b, a])); } });
+    scan((lx, ly) => { const a = free(lx, ly, 'sq'), b = free(lx + 1, ly, 'sq'); if (a && b) { take([a, b]); out.push(mk(o, 'wal', [a, b])); } });
+    scan((lx, ly) => { const a = free(lx, ly, 'sq'); if (a) { take([a]); const u = mk(o, 'bug', [a]); u.l = [lx, ly]; buggies.push(u); out.push(u); } });
+    scan((lx, ly) => { const c = free(lx, ly, 'cir'); if (!c) return; take([c]);
+      let tower = false; for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) if (castleCells.has((c.x + dx) + ',' + (c.y + dy))) tower = true;
+      out.push(mk(o, tower ? 'twr' : 'tur', [c])); });
+    for (const b of buggies) for (const [dx, dy] of [[0, -1], [-1, 0], [1, 0], [0, 1]]) {
+      if (b.riders >= 2) break; const c = free(b.l[0] + dx, b.l[1] + dy, 'tri');
+      if (c) { take([c]); b.riders++; const r = mk(o, 'inf', [c]); r.rider = true; out.push(r); }
+    }
+    scan((lx, ly) => { const c = free(lx, ly, 'tri'); if (c) { take([c]); out.push(mk(o, 'inf', [c])); } });
+  }
+  return out;
+}
+
+/* ---------- battle simulation (deterministic) ---------- */
+const occMap = us => { const m = new Map(); us.forEach(u => u.cells.forEach(c => m.set(key(c), u))); return m; };
+const centre = c => [c[0] + 0.5, c[1] + 0.5];
+const unitCentre = u => { let x = 0, y = 0; u.cells.forEach(c => { x += c[0]; y += c[1]; }); return [x / u.cells.length + 0.5, y / u.cells.length + 0.5]; };
+const frontTargets = u => { const own = new Set(u.cells.map(key)); return u.cells.map(([x, y]) => [x, y + fwd(u.o)]).filter(c => !own.has(key(c))); };
+const nearestCell = (u, ref) => u.cells.reduce((b, c) => (Math.abs(c[0] - ref[0]) + Math.abs(c[1] - ref[1]) < Math.abs(b[0] - ref[0]) + Math.abs(b[1] - ref[1]) ? c : b));
+
+function pickTarget(u, units, occ) {
+  const [x, y] = u.cells[0];
+  if (u.t === 'inf') {
+    let best = null;
+    dirsFor(u.o).forEach(dir => {
+      for (let d = 1; d <= RANGE.inf; d++) {
+        const c = [x + dir[0] * d, y + dir[1] * d]; if (!inB(c)) break;
+        const v = occ.get(key(c));
+        if (v) { if (v.o !== u.o && (!best || d < best.d)) best = { u: v, cell: c, d, dir }; break; }
+      }
+    });
+    return best;
+  }
+  const R = RANGE[u.t]; let best = null, bk = null;
+  for (const v of units) {
+    if (v.o === u.o) continue;
+    for (const c of v.cells) {
+      const dx = c[0] - x, dy = c[1] - y, ch = Math.max(Math.abs(dx), Math.abs(dy));
+      if (ch > R) continue;
+      if (u.t === 'twr' && dy * fwd(u.o) < 0) continue; // towers don't fire backwards
+      const [lx, ly] = toL(u.o, c[0], c[1]);
+      const k = [ch, Math.abs(dx) + Math.abs(dy), v.hp, ly, lx];
+      if (!bk || cmp(k, bk) < 0) { bk = k; best = { u: v, cell: c }; }
+    }
+  }
+  return best;
+}
+
+function applyDamage(B, map, fx) {
+  let any = false;
+  for (const [id, d] of map) {
+    const u = B.units.find(v => v.id === id); if (!u) continue;
+    const real = Math.min(d, u.hp); u.hp -= d; B.score[1 - u.o].d += real; any = true;
+    fx.hits.push({ id, d: real, at: unitCentre(u) });
+    if (u.hp <= 0) { const n = 1 + (u.riders || 0); B.score[1 - u.o].k += KILL * n; B.score[1 - u.o].kills += n;
+      fx.dead.push(u.id); fx.lines.push(`${TEAM[u.o]} ${TYPES[u.t].name.toLowerCase()}${u.riders ? ` and ${u.riders} rider${u.riders > 1 ? 's' : ''}` : ''} destroyed`); }
+  }
+  B.units = B.units.filter(u => u.hp > 0);
+  return any;
+}
+
+function stepBattle(B) {
+  const fx = { shots: [], rams: [], hits: [], dead: [], fresh: [], lines: [] };
+  B.turn++;
+  let occ = occMap(B.units);
+  // 1. everything fires simultaneously
+  const dmg = new Map(), shot = new Set();
+  for (const u of B.units) {
+    if (!DMG[u.t]) continue;
+    const tg = pickTarget(u, B.units, occ);
+    if (!tg) { if (u.t === 'inf') u.face = [0, fwd(u.o)]; continue; }
+    shot.add(u.id); if (u.t === 'inf') u.face = tg.dir;
+    dmg.set(tg.u.id, (dmg.get(tg.u.id) || 0) + DMG[u.t]);
+    fx.shots.push({ o: u.o, from: centre(u.cells[0]), to: centre(tg.cell) });
+  }
+  let active = applyDamage(B, dmg, fx);
+  occ = occMap(B.units);
+  // 2. everything moves simultaneously
+  const intents = [], ramD = new Map(), unloadQ = [];
+  for (const u of B.units) {
+    if (u.t === 'inf') { if (!shot.has(u.id)) intents.push(u); continue; }
+    if (u.t !== 'trk' && u.t !== 'bug') continue;
+    const loaded = u.t === 'bug' && u.riders > 0;
+    if (loaded && u.moves >= BUGGY_RUN) { unloadQ.push(u); continue; }
+    const tc = frontTargets(u);
+    if (tc.some(c => !inB(c))) { if (loaded) unloadQ.push(u); continue; }
+    const enemy = tc.map(c => occ.get(key(c))).find(v => v && v.o !== u.o);
+    if (enemy) {
+      if (loaded) { unloadQ.push(u); continue; }
+      ramD.set(enemy.id, (ramD.get(enemy.id) || 0) + RAM[u.t]);
+      const f = tc[0]; fx.rams.push({ o: u.o, from: centre([f[0], f[1] - fwd(u.o)]), to: centre(nearestCell(enemy, f)) });
+      continue;
+    }
+    intents.push(u);
+  }
+  const want = new Map(), claims = new Map();
+  for (const u of intents) {
+    const tc = frontTargets(u);
+    if (tc.some(c => !inB(c))) continue;
+    if (tc.some(c => { const v = occ.get(key(c)); return v && v.o !== u.o; })) continue;
+    want.set(u, tc); tc.forEach(c => claims.set(key(c), (claims.get(key(c)) || 0) + 1));
+  }
+  for (const [u, tc] of want) if (tc.some(c => claims.get(key(c)) > 1)) want.delete(u);
+  let progress = true;
+  while (progress) {
+    progress = false;
+    for (const [u, tc] of want) {
+      if (tc.every(c => !occ.has(key(c)))) {
+        u.cells.forEach(c => occ.delete(key(c)));
+        u.cells = u.cells.map(([x, y]) => [x, y + fwd(u.o)]);
+        u.cells.forEach(c => occ.set(key(c), u));
+        if (u.t === 'bug') u.moves++;
+        want.delete(u); progress = true; active = true;
+      }
+    }
+  }
+  if (applyDamage(B, ramD, fx)) active = true;
+  occ = occMap(B.units);
+  // 3. buggies drop riders (takes the buggy's turn; riders act next turn)
+  for (const b of unloadQ) {
+    if (!B.units.includes(b)) continue;
+    const [bx, by] = b.cells[0];
+    for (const [dx, dy] of dirsFor(b.o)) {
+      if (b.riders <= 0) break;
+      const c = [bx + dx, by + dy];
+      if (inB(c) && !occ.has(key(c))) { const n = mk(b.o, 'inf', [c]); B.units.push(n); occ.set(key(c), n); b.riders--; fx.fresh.push(n.id); active = true; }
+    }
+    if (fx.fresh.length) fx.lines.push(`${TEAM[b.o]} buggy unloads`);
+  }
+  B.idle = active ? 0 : B.idle + 1;
+  const alive = [0, 1].map(o => B.units.some(u => u.o === o));
+  if (B.turn >= MAX_TURNS || B.idle >= IDLE_END || !alive[0] || !alive[1]) {
+    B.over = true;
+    B.why = !alive[0] || !alive[1] ? `${TEAM[alive[0] ? 1 : 0]} wiped out` : B.idle >= IDLE_END ? 'Stalemate: nothing happened for 3 turns' : `${MAX_TURNS} turns played`;
+  }
+  fx.summary = { shots: fx.shots.length, rams: fx.rams.length };
+  return fx;
+}
+
+/* ---------- CPU opponent (picks a build, then places it 2 at a time) ---------- */
+const TEMPLATES = [
+  [[3,0,'sq'],[4,0,'sq'],[3,1,'sq'],[4,1,'sq'],[2,2,'cir'],[5,2,'cir'],[1,2,'sq'],[1,3,'tri'],[0,2,'tri'],[2,3,'tri'],[5,3,'tri'],[6,1,'cir']],
+  [[1,3,'sq'],[1,2,'sq'],[6,3,'sq'],[6,2,'sq'],[3,3,'sq'],[2,3,'tri'],[4,3,'tri'],[0,1,'cir'],[7,1,'cir'],[3,1,'tri'],[5,1,'tri'],[4,1,'cir']],
+  [[2,3,'sq'],[3,3,'sq'],[4,3,'sq'],[5,3,'sq'],[2,2,'cir'],[5,2,'cir'],[0,2,'sq'],[0,3,'tri'],[3,1,'cir'],[1,1,'tri'],[6,1,'tri'],[7,2,'tri']],
+  [[3,1,'sq'],[3,2,'sq'],[2,2,'sq'],[2,3,'tri'],[1,2,'tri'],[5,2,'sq'],[5,3,'tri'],[6,2,'tri'],[4,0,'sq'],[1,0,'cir'],[6,0,'cir'],[4,1,'cir']],
+];
+function makeCpuPlan() {
+  const t = TEMPLATES[Math.floor(Math.random() * TEMPLATES.length)], m = Math.random() < 0.5;
+  return t.map(([x, y, s]) => ({ x: m ? N - 1 - x : x, y, s }));
+}
+
+/* ---------- game flow ---------- */
+function buildSchedule() {
+  const rem = [12, 12], s = []; let p = 0, first = true;
+  while (rem[0] + rem[1] > 0) { const c = Math.min(first ? 1 : 2, rem[p]); first = false; if (c > 0) { s.push([p, c]); rem[p] -= c; } p = 1 - p; }
+  return s;
+}
+function newGame(mode) {
+  clearTimeout(S && S.timer);
+  S = { mode: mode || (S && S.mode) || 'cpu', grid: Array.from({ length: N }, () => Array(N).fill(null)),
+    inv: [{ ...INV }, { ...INV }], sched: buildSchedule(), step: 0, placed: [], sel: 'sq', phase: 'place',
+    battle: null, cpuPlan: null, cpuIdx: 0, speed: 1, playing: false, gen: ++GEN, msg: '' };
+  if (S.mode === 'cpu') S.cpuPlan = makeCpuPlan();
+  render(); maybeCpu();
+}
+const cur = () => S.sched[S.step];
+const isHumanTurn = () => S.phase === 'place' && cur() && !(S.mode === 'cpu' && cur()[0] === 1);
+const inHalf = (p, y) => (p === 0 ? y >= N / 2 : y < N / 2);
+
+function flash(msg) { S.msg = msg; renderStatus(); clearTimeout(S.msgT); S.msgT = setTimeout(() => { S.msg = ''; renderStatus(); }, 1800); }
+
+function placeAt(x, y) {
+  if (!isHumanTurn()) return;
+  const [p, c] = cur(), g = S.grid[y][x];
+  const mine = S.placed.findIndex(q => q[0] === x && q[1] === y);
+  if (mine >= 0) { S.inv[p][g.s]++; S.grid[y][x] = null; S.placed.splice(mine, 1); render(); return; }
+  if (!inHalf(p, y)) return flash(`Place on ${TEAM[p]}'s half (${p === 0 ? 'bottom' : 'top'}).`);
+  if (g) return flash('That cell is taken.');
+  if (S.placed.length >= c) return flash('Placed enough this turn. Tap Done, or tap a piece to take it back.');
+  if (S.inv[p][S.sel] <= 0) return;
+  S.grid[y][x] = { s: S.sel, o: p }; S.inv[p][S.sel]--; S.placed.push([x, y]);
+  if (S.inv[p][S.sel] <= 0) { const nx = ['sq', 'tri', 'cir'].find(s => S.inv[p][s] > 0); if (nx) S.sel = nx; }
+  render();
+}
+function undo() {
+  if (!isHumanTurn() || !S.placed.length) return;
+  const [x, y] = S.placed.pop(), g = S.grid[y][x]; S.inv[g.o][g.s]++; S.sel = g.s; S.grid[y][x] = null; render();
+}
+function advance() {
+  S.step++; S.placed = [];
+  if (S.step >= S.sched.length) S.phase = 'ready';
+  else { const p = cur()[0]; if (S.inv[p][S.sel] <= 0) S.sel = ['sq', 'tri', 'cir'].find(s => S.inv[p][s] > 0) || 'sq'; }
+  render(); maybeCpu();
+}
+function maybeCpu() {
+  if (S.phase !== 'place' || !cur() || S.mode !== 'cpu' || cur()[0] !== 1) return;
+  const g = S.gen;
+  const next = () => {
+    if (g !== S.gen || S.phase !== 'place') return;
+    if (S.placed.length >= cur()[1]) { setTimeout(() => { if (g === S.gen) advance(); }, 250); return; }
+    const b = S.cpuPlan[S.cpuIdx++]; S.grid[b.y][b.x] = { s: b.s, o: 1 }; S.inv[1][b.s]--; S.placed.push([b.x, b.y]);
+    render(); setTimeout(next, 380);
+  };
+  setTimeout(next, 420);
+}
+
+function startBattle() {
+  clearTimeout(S.timer);
+  const units = recognise(S.grid).filter(u => !u.rider);
+  S.phase = 'battle';
+  S.battle = { units, turn: 0, score: [{ d: 0, k: 0, kills: 0 }, { d: 0, k: 0, kills: 0 }], idle: 0, over: false, why: '' };
+  unitsEl.innerHTML = ''; fxEl.innerHTML = ''; floatsEl.innerHTML = ''; $('#result').hidden = true;
+  $('#log').textContent = 'Turn 0: armies deployed.';
+  render(); S.playing = true; renderPlay(); S.timer = setTimeout(tick, SPEEDS[S.speed]);
+}
+function tick() {
+  if (S.phase !== 'battle' || !S.playing || S.battle.over) return;
+  doStep();
+  if (!S.battle.over) S.timer = setTimeout(tick, SPEEDS[S.speed]);
+}
+function doStep() {
+  const B = S.battle; if (B.over) return;
+  const fx = stepBattle(B);
+  const bits = [];
+  if (fx.summary.shots) bits.push(`${fx.summary.shots} shot${fx.summary.shots > 1 ? 's' : ''}`);
+  if (fx.summary.rams) bits.push(`${fx.summary.rams} ram${fx.summary.rams > 1 ? 's' : ''}`);
+  $('#log').textContent = `Turn ${B.turn}: ${[...bits, ...fx.lines].join(', ') || 'units advance'}.`;
+  render(fx);
+  if (B.over) { S.playing = false; renderPlay(); showResult(); }
+}
+function skipToEnd() {
+  const B = S.battle; clearTimeout(S.timer);
+  while (!B.over) stepBattle(B);
+  S.playing = false; unitsEl.innerHTML = ''; fxEl.innerHTML = '';
+  $('#log').textContent = `Skipped to turn ${B.turn}.`;
+  render(); renderPlay(); showResult();
+}
+function showResult() {
+  const B = S.battle, t = B.score.map(s => s.d + s.k), w = t[0] === t[1] ? -1 : t[0] > t[1] ? 0 : 1;
+  const r = $('#result');
+  r.innerHTML = `<div class="card">
+    <h2 class="${w < 0 ? '' : 'w' + w}">${w < 0 ? 'Draw' : TEAM[w] + ' wins'}</h2>
+    <div class="big">${t[0]} – ${t[1]}</div>
+    <div class="det">${B.why}<br>Blue ${B.score[0].d} dmg + ${B.score[0].kills} kills · Orange ${B.score[1].d} dmg + ${B.score[1].kills} kills</div>
+    <div class="row"><button id="r-replay">Replay battle</button><button id="r-new" class="go">New game</button></div></div>`;
+  r.hidden = false;
+  $('#r-replay').onclick = startBattle; $('#r-new').onclick = () => newGame();
+}
+
+/* ---------- rendering ---------- */
+const DEG = { '0,-1': 0, '1,0': 90, '0,1': 180, '-1,0': 270 };
+function unitEl(u) {
+  const xs = u.cells.map(c => c[0]), ys = u.cells.map(c => c[1]);
+  const mx = Math.min(...xs), my = Math.min(...ys), w = Math.max(...xs) - mx + 1, h = Math.max(...ys) - my + 1;
+  const el = document.createElement('div');
+  el.className = `unit o${u.o} t-${u.t}${u.cells.length > 1 ? ' multi' : ''}${u.rider ? ' rider' : ''}`;
+  el.dataset.id = u.id; el.dataset.w = w; el.dataset.h = h;
+  let html = '<div class="frame"></div>';
+  for (const c of u.cells) {
+    html += `<div class="blk" style="left:${(c[0] - mx) / w * 100}%;top:${(c[1] - my) / h * 100}%;width:${100 / w}%;height:${100 / h}%">${shapeSvg(TYPES[u.t].shape, u.t === 'twr' ? '<circle class="ring" cx="50" cy="50" r="44"/>' : '')}</div>`;
+  }
+  html += `<span class="tag">${u.rider ? 'RIDE' : TYPES[u.t].code}</span><span class="pips"></span><div class="hp"><i></i></div>`;
+  el.innerHTML = html;
+  el.style.width = w * 12.5 + '%'; el.style.height = h * 12.5 + '%';
+  return el;
+}
+function updateEl(el, u) {
+  el.style.left = Math.min(...u.cells.map(c => c[0])) * 12.5 + '%';
+  el.style.top = Math.min(...u.cells.map(c => c[1])) * 12.5 + '%';
+  el.querySelector('.hp i').style.width = Math.max(0, u.hp / u.max * 100) + '%';
+  el.querySelector('.pips').textContent = u.t === 'bug' && u.riders ? '▲'.repeat(u.riders) : '';
+  if (u.t === 'inf') el.querySelector('.blk svg').style.transform = `rotate(${DEG[u.face.join(',')] ?? 0}deg)`;
+}
+
+function render(fx) {
+  board.style.setProperty('--dur', Math.min(SPEEDS[S.speed] * 0.6, 360) + 'ms');
+  const ph = S.phase, c = cur();
+  board.dataset.active = ph === 'place' && c ? (isHumanTurn() ? c[0] : '') : '';
+  board.classList.toggle('battle', ph === 'battle');
+
+  // units
+  let units;
+  if (ph === 'battle') {
+    units = S.battle.units;
+    const live = new Map(units.map(u => [u.id, u]));
+    unitsEl.querySelectorAll('.unit').forEach(el => {
+      if (!live.has(el.dataset.id) && !el.classList.contains('dead')) { el.classList.add('dead'); setTimeout(() => el.remove(), 420); }
+    });
+    for (const u of units) {
+      let el = unitsEl.querySelector(`[data-id="${u.id}"]`);
+      if (!el) { el = unitEl(u); if (fx && fx.fresh.includes(u.id)) el.classList.add('fresh'); unitsEl.appendChild(el); }
+      updateEl(el, u);
+    }
+    if (fx) drawFx(fx);
+  } else {
+    units = recognise(S.grid);
+    unitsEl.innerHTML = '';
+    for (const u of units) { const el = unitEl(u); unitsEl.appendChild(el); updateEl(el, u); }
+    const last = S.placed[S.placed.length - 1];
+    if (last) { const el = [...unitsEl.children].find((e, i) => units[i].cells.some(q => q[0] === last[0] && q[1] === last[1])); if (el) el.classList.add('fresh'); }
+  }
+
+  // scores
+  for (const o of [0, 1]) {
+    const side = $('#side' + o);
+    if (ph === 'battle') {
+      const sc = S.battle.score[o]; $('#s' + o).textContent = sc.d + sc.k;
+      $('#b' + o).textContent = `${sc.d} dmg · ${sc.kills} kill${sc.kills === 1 ? '' : 's'} (+${sc.k})`;
+      const other = S.battle.score[1 - o]; side.classList.toggle('lead', sc.d + sc.k > other.d + other.k);
+    } else {
+      const left = S.inv[o].sq + S.inv[o].tri + S.inv[o].cir; $('#s' + o).textContent = left;
+      $('#b' + o).textContent = `block${left === 1 ? '' : 's'} left${S.mode === 'cpu' && o === 1 ? ' · CPU' : ''}`;
+      side.classList.remove('lead');
+    }
+  }
+
+  // controls
+  $('#place-ctl').hidden = ph === 'battle';
+  $('#battle-ctl').hidden = ph !== 'battle';
+  if (ph !== 'battle') {
+    const p = c ? c[0] : 0, human = isHumanTurn();
+    $('#place-ctl').dataset.turn = p;
+    $('#tray').innerHTML = ['sq', 'tri', 'cir'].map(s =>
+      `<button class="shape-btn" data-s="${s}" aria-pressed="${S.sel === s && human}" aria-label="${{ sq: 'Square', tri: 'Triangle', cir: 'Circle' }[s]}, ${S.inv[p][s]} left" ${!human || S.inv[p][s] <= 0 ? 'disabled' : ''}>${shapeSvg(s)}<span class="n">${S.inv[p][s]}</span></button>`).join('');
+    $('#tray').hidden = ph === 'ready';
+    $('#undo').hidden = $('#done').hidden = ph === 'ready';
+    $('#undo').disabled = !human || !S.placed.length;
+    $('#done').disabled = !human || !c || S.placed.length < c[1];
+    $('#fight').hidden = ph !== 'ready';
+    $('#result').hidden = true;
+    if (ph === 'place') $('#log').textContent = '';
+  } else {
+    $('#turn').textContent = `Turn ${S.battle.turn} / ${MAX_TURNS}`;
+  }
+  renderStatus(); renderRoster(units);
+}
+function renderStatus() {
+  const st = $('#status'), c = cur();
+  if (S.msg) { st.textContent = S.msg; return; }
+  if (S.phase === 'place' && c) {
+    const [p, n] = c, left = n - S.placed.length;
+    if (!isHumanTurn()) st.innerHTML = `<span class="who1">Orange</span> is placing…`;
+    else st.innerHTML = left > 0 ? `<span class="who${p}">${TEAM[p]}</span>: place ${left} more block${left > 1 ? 's' : ''} on your half.`
+      : `<span class="who${p}">${TEAM[p]}</span>: tap Done to hand over.`;
+  } else if (S.phase === 'ready') st.textContent = 'Both armies are set. Tap Fight.';
+  else if (S.phase === 'battle') st.textContent = S.battle.over ? 'Battle over.' : S.playing ? 'Battle running…' : 'Paused.';
+}
+function renderRoster(units) {
+  const rows = [0, 1].map(o => {
+    const counts = new Map();
+    for (const u of units) {
+      if (u.o !== o || u.rider) continue;
+      const label = u.t === 'bug' && u.riders ? `Buggy +${u.riders} rider${u.riders > 1 ? 's' : ''}` : TYPES[u.t].name;
+      counts.set(label, (counts.get(label) || 0) + 1);
+    }
+    const txt = [...counts].map(([l, n]) => n > 1 ? `${l} ×${n}` : l).join(', ') || 'Nothing yet';
+    return `<div class="r${o}"><b>${TEAM[o]}</b>${txt}</div>`;
+  });
+  $('#roster').innerHTML = rows.join('');
+}
+function drawFx(fx) {
+  fxEl.innerHTML = fx.shots.map(s => `<line class="shot o${s.o}s" x1="${s.from[0]}" y1="${s.from[1]}" x2="${s.to[0]}" y2="${s.to[1]}"/><circle class="imp o${s.o}s" cx="${s.to[0]}" cy="${s.to[1]}" r=".13"/>`).join('')
+    + fx.rams.map(s => `<line class="ram o${s.o}s" x1="${s.from[0]}" y1="${s.from[1]}" x2="${(s.from[0] + s.to[0]) / 2}" y2="${(s.from[1] + s.to[1]) / 2}"/>`).join('');
+  for (const h of fx.hits) {
+    const el = unitsEl.querySelector(`[data-id="${h.id}"]`);
+    if (el) { el.classList.remove('hit'); void el.offsetWidth; el.classList.add('hit'); }
+    const f = document.createElement('div'); const killed = fx.dead.includes(h.id);
+    f.className = 'float' + (killed ? ' kill' : ''); f.textContent = killed ? `−${h.d} KO` : `−${h.d}`;
+    f.style.left = h.at[0] * 12.5 + '%'; f.style.top = h.at[1] * 12.5 + '%';
+    floatsEl.appendChild(f); setTimeout(() => f.remove(), 750);
+  }
+}
+function renderPlay() {
+  $('#play').textContent = S.playing ? 'Pause' : 'Play';
+  $('#play').disabled = $('#stepb').disabled = $('#skip').disabled = !S.battle || S.battle.over;
+  document.querySelectorAll('[data-sp]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.sp === S.speed));
+  renderStatus();
+}
+
+/* ---------- field manual ---------- */
+const MANUAL = [
+  ['inf', ['T'], 'Shoots 1 damage up to 3 cells in a straight line, front first, then sides, then back. Walks forward when nothing is in range.'],
+  ['bug', ['TST'], 'Picks up to 2 triangles touching its sides or front as riders. Drives 4 cells, then spends a turn dropping them off. Empty, it keeps driving and rams for 1.'],
+  ['trk', ['S', 'S'], 'Two squares in a column. Drives forward and rams whatever blocks it for 2.'],
+  ['wal', ['SS'], 'Two squares in a row. Holds still and soaks up fire.'],
+  ['cst', ['SS', 'SS'], 'Four squares in a block. Holds still. Circles touching it become towers.'],
+  ['tur', ['C'], 'A lone circle. Hits 1 damage on the closest enemy within 2 cells, diagonals included.'],
+  ['twr', ['SS.', 'SSC'], 'A circle touching a castle, diagonals included. 2 damage, range 3, fires forward and sideways only.'],
+];
+$('#ulist').innerHTML = MANUAL.map(([t, rows, txt]) => {
+  const cols = Math.max(...rows.map(r => r.length));
+  const cells = rows.map(r => r.padEnd(cols, '.').split('').map(ch => `<span>${ch === '.' ? '' : shapeSvg({ S: 'sq', T: 'tri', C: 'cir' }[ch], t === 'twr' && ch === 'C' ? '<circle class="ring" cx="50" cy="50" r="44"/>' : '')}</span>`).join('')).join('');
+  return `<li><div class="mini" style="grid-template-columns:repeat(${cols},17px)">${cells}</div><div><strong>${TYPES[t].name}</strong><span class="code">${TYPES[t].code} · ${TYPES[t].hp} HP</span><p>${txt}</p></div></li>`;
+}).join('');
+
+/* ---------- events ---------- */
+board.addEventListener('click', e => {
+  const r = board.getBoundingClientRect();
+  const x = Math.min(N - 1, Math.max(0, Math.floor((e.clientX - r.left) / r.width * N)));
+  const y = Math.min(N - 1, Math.max(0, Math.floor((e.clientY - r.top) / r.height * N)));
+  if (S.phase === 'place') placeAt(x, y);
+});
+$('#tray').addEventListener('click', e => { const b = e.target.closest('[data-s]'); if (b && !b.disabled) { S.sel = b.dataset.s; render(); } });
+$('#undo').onclick = undo;
+$('#done').onclick = () => { if (isHumanTurn() && S.placed.length >= cur()[1]) advance(); };
+$('#fight').onclick = startBattle;
+$('#play').onclick = () => { if (!S.battle || S.battle.over) return; S.playing = !S.playing; renderPlay(); clearTimeout(S.timer); if (S.playing) S.timer = setTimeout(tick, 120); };
+$('#stepb').onclick = () => { if (!S.battle || S.battle.over) return; S.playing = false; clearTimeout(S.timer); doStep(); renderPlay(); };
+$('#skip').onclick = () => { if (S.battle && !S.battle.over) skipToEnd(); };
+document.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => { S.speed = +b.dataset.sp; board.style.setProperty('--dur', Math.min(SPEEDS[S.speed] * 0.6, 360) + 'ms'); renderPlay(); });
+const setMode = m => { $('#m-cpu').setAttribute('aria-pressed', m === 'cpu'); $('#m-2p').setAttribute('aria-pressed', m === '2p'); newGame(m); };
+$('#m-cpu').onclick = () => setMode('cpu');
+$('#m-2p').onclick = () => setMode('2p');
+$('#new').onclick = () => newGame();
+document.addEventListener('keydown', e => {
+  if (e.target.closest('input,textarea')) return;
+  if (e.key === '1') S.sel = 'sq'; else if (e.key === '2') S.sel = 'tri'; else if (e.key === '3') S.sel = 'cir';
+  else if ((e.key === 'z' || e.key === 'Z') && (e.ctrlKey || e.metaKey)) { undo(); return; } else return;
+  if (S.phase === 'place') render();
+});
+
+/* ---------- boot, keeping a half-built layout across live updates ---------- */
+try { window.claude?.hot?.snapshot?.(() => ({ mode: S.mode, grid: S.grid, inv: S.inv, step: S.step, placed: S.placed, sel: S.sel, cpuPlan: S.cpuPlan, cpuIdx: S.cpuIdx, phase: S.phase === 'battle' ? 'ready' : S.phase })); } catch (e) {}
+function start(d) {
+  if (d && d.grid && d.inv) {
+    newGame(d.mode);
+    Object.assign(S, { grid: d.grid, inv: d.inv, step: d.step, placed: d.placed || [], sel: d.sel || 'sq', cpuPlan: d.cpuPlan || S.cpuPlan, cpuIdx: d.cpuIdx || 0, phase: d.phase || 'place' });
+    $('#m-cpu').setAttribute('aria-pressed', S.mode === 'cpu'); $('#m-2p').setAttribute('aria-pressed', S.mode === '2p');
+    render(); maybeCpu();
+  } else newGame('cpu');
+}
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+</script>
+
+</body></html>
