@@ -54,11 +54,15 @@ button.go{background:var(--ink);color:var(--board);border-color:var(--ink)}
 .status{font-family:var(--f-display);font-weight:600;font-size:15px;min-height:22px}
 .status .who0{color:var(--blue)} .status .who1{color:var(--orange)}
 
-.board{position:relative;width:100%;aspect-ratio:1;background-color:var(--board);
+.board{position:relative;width:100%;aspect-ratio:var(--cols) / var(--rows);background-color:var(--board);
   background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
-  background-size:12.5% 12.5%;border:2px solid var(--ink);border-radius:6px;touch-action:manipulation;user-select:none;-webkit-user-select:none;overflow:hidden}
-.board::after{content:"";position:absolute;left:0;right:0;top:calc(50% - 1px);border-top:2px dashed var(--line);pointer-events:none}
-.half{position:absolute;left:0;right:0;height:50%;opacity:0;transition:opacity .25s;pointer-events:none}
+  background-size:calc(100% / var(--cols)) calc(100% / var(--rows));border:2px solid var(--ink);border-radius:6px;touch-action:manipulation;user-select:none;-webkit-user-select:none;overflow:hidden}
+.board{--cols:8;--rows:10;--half:5} /* set from the sim by app.js; these are only fallbacks */
+/* two dashed lines mark each side's territory; with an odd number of rows the row between them would be no-man's land; with an even number of rows they meet in the middle */
+.board::before,.board::after{content:"";position:absolute;left:0;right:0;border-top:2px dashed var(--line);pointer-events:none}
+.board::before{top:calc(100% * var(--half) / var(--rows) - 1px)}
+.board::after{top:calc(100% * (var(--rows) - var(--half)) / var(--rows) - 1px)}
+.half{position:absolute;left:0;right:0;height:calc(100% * var(--half) / var(--rows));opacity:0;transition:opacity .25s;pointer-events:none}
 .half.h1{top:0;background:var(--orange-t)} .half.h0{bottom:0;background:var(--blue-t)}
 .board[data-active="0"] .h0, .board[data-active="1"] .h1{opacity:.55}
 .board[data-active="0"], .board[data-active="1"]{cursor:pointer}
@@ -75,7 +79,9 @@ button.go{background:var(--ink);color:var(--board);border-color:var(--ink)}
 .blk svg{width:100%;height:100%;display:block;transition:transform var(--dur) ease}
 .shp{fill:var(--t)} .ring{fill:none;stroke:var(--t);stroke-width:5}
 .tag{position:absolute;top:4px;left:6px;font-family:var(--f-display);font-weight:700;font-size:9px;letter-spacing:.08em;line-height:1;color:var(--t)}
-.pips{position:absolute;top:3px;right:5px;font-size:9px;line-height:1;color:var(--t);letter-spacing:-1px}
+.riders{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);display:flex;justify-content:center;gap:0;pointer-events:none}
+.riders svg{width:46%;max-width:34px;height:auto;aspect-ratio:1}
+.riders .shp{fill:var(--tt);stroke:var(--ink);stroke-width:5;stroke-linejoin:round}
 .hp{position:absolute;left:14%;right:14%;bottom:5px;height:3px;border-radius:2px;background:var(--grid);display:none}
 .hp i{display:block;height:100%;border-radius:2px;background:var(--t);transition:width .25s}
 .board.battle .hp{display:block}
@@ -136,3 +142,16 @@ button.go{background:var(--ink);color:var(--board);border-color:var(--ink)}
   .unit,.blk svg,.hp i{transition:none!important}
   .shot,.ram,.imp,.float,.unit.fresh,.unit.hit .frame{animation-duration:1ms!important}
 }
+
+/* a circle mounted on a castle corner */
+.mount{position:absolute;width:30%;aspect-ratio:1;transform:translate(-50%,-50%);pointer-events:none}
+.mount svg{width:100%;height:100%;display:block}
+.mount .shp{fill:var(--board);stroke:var(--t);stroke-width:8}
+.unit.t-cst .tag{left:50%;transform:translateX(-50%)} /* keep the CST tag clear of the corner towers */
+
+/* mines: a buried circle with spokes, no frame or health bar */
+.unit.t-mine .frame,.unit.t-mine .hp{display:none}
+.unit.t-pln{z-index:5} .unit.t-pln .frame{display:none} /* planes fly above the ground units and are drawn without a box round the empty corners */
+.unit.t-pln .blk{filter:drop-shadow(0 3px 2px rgba(0,0,0,.35))}
+.unit.t-mine .shp{fill:var(--tt);stroke:var(--t);stroke-width:7}
+.spoke{stroke:var(--t);stroke-width:7;stroke-linecap:round;fill:none}

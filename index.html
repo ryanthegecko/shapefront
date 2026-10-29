@@ -38,7 +38,7 @@
       <div class="board" id="board" data-active="">
         <div class="half h1"></div><div class="half h0"></div>
         <div class="layer" id="units"></div>
-        <svg class="fx" id="fx" viewBox="0 0 8 8" preserveAspectRatio="none"></svg>
+        <svg class="fx" id="fx" viewBox="0 0 9 9" preserveAspectRatio="none"></svg>
         <div class="layer" id="floats"></div>
         <div class="result" id="result" hidden></div>
       </div>
@@ -52,6 +52,7 @@
       </div>
       <div class="ctl" id="battle-ctl" hidden>
         <button id="play" class="go">Pause</button>
+        <button id="back">Step back</button>
         <button id="stepb">Step</button>
         <div class="seg" role="group" aria-label="Speed">
           <button data-sp="0" aria-pressed="true">1×</button>
@@ -72,7 +73,7 @@
       <ul class="ulist" id="ulist"></ul>
       <h3>How a game runs</h3>
       <ol class="rules">
-        <li>Each side gets <b>5 squares, 4 triangles, 3 circles</b> on its own half of an 8×8 grid.</li>
+        <li>Each side gets <b>7 squares, 10 triangles, 3 circles</b> on its own half of an 8×10 grid (8 wide, 10 tall): Blue the bottom 5 rows, Orange the top 5.</li>
         <li>Blue places 1 block, then each side places 2 at a time. Placements are visible.</li>
         <li>Squares are grouped first into castles, then columns (trucks), then rows (walls). Leftovers are buggies.</li>
         <li>Each turn, everything fires at once, then everything moves at once. Two units heading for the same cell both wait.</li>
