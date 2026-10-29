@@ -1,0 +1,9 @@
+{
+  "name": "shapefront",
+  "version": "0.1.0",
+  "description": "A turn-based shape-army battler: place shapes, they join into units, watch them fight.",
+  "private": true,
+  "scripts": {
+    "test": "node --test"
+  }
+}
